@@ -24,7 +24,9 @@ License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
     Original work: https://github.com/ElsevierSoftwareX/SOFTX-D-21-00212
-    OpenFOAM port: Pranay (pandeyji), September 2026
+    OpenFOAM port: Pranay K. Pandey, Indian Institute of Space Science & Technology, Trivandrum
+    GitHub: https://github.com/Pranay1004
+    Date: September 2026
 
 Application
     beamWeldFoam

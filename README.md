@@ -396,4 +396,5 @@ GNU General Public License v3.0
 - Philip Cardiff, University College Dublin
 
 **Ported to OF2412:**
-- Pranay (pandeyji), September 2026
+- Pranay K. Pandey, Indian Institute of Space Science & Technology, Trivandrum
+- GitHub: https://github.com/Pranay1004
