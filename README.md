@@ -391,6 +391,8 @@ GNU General Public License v3.0
 **Original solver:**
 - Tom Flint, University of Manchester
 - Gowthaman Parivendhan, University College Dublin
+- Alojz Ivankovic, University College Dublin
+- Michael C. Smith, University of Manchester
 - Philip Cardiff, University College Dublin
 
 **Ported to OF2412:**
