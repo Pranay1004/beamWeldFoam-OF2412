@@ -1,0 +1,28 @@
+#!/bin/sh
+# WAAM Arc Case - Allrun script
+# Copies initial fields, generates mesh, sets fields, and runs beamWeldFoam
+
+cd ${0%/*} || exit 1
+
+. /opt/homebrew/bin/openfoam2412
+
+echo "=== Setting up WAAM Arc Case ==="
+
+# Copy initial conditions to 0/
+rm -rf 0
+cp -r initial 0
+
+# Generate mesh
+echo "Generating mesh..."
+blockMesh -dict system/blockMeshDict
+
+# Set initial fields (alpha.phase1 in substrate)
+echo "Setting fields..."
+setFields
+
+# Run beamWeldFoam (single processor for M4 Air 16GB)
+echo "Starting beamWeldFoam..."
+beamWeldFoam > log 2>&1 &
+
+echo "Running in background. Check log for progress."
+echo "PID: $!"

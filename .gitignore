@@ -1,0 +1,28 @@
+# OpenFOAM output timesteps (keep 0/ and initial/)
+[1-9]*/
+processor*/
+
+# Compiled objects and build artifacts
+**/darwin64ClangDPInt32Opt/
+*.o
+*.dep
+
+# Logs
+log
+*.log
+
+# Temporary files
+*~
+*.bak
+*.pvs
+*.OpenFOAM
+
+# macOS
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+
+# Keep initial conditions
+!initial/

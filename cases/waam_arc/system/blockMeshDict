@@ -1,0 +1,97 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     | Website:  https://openfoam.org
+    \\  /    A nd           | Version:  2412
+     \\/     M anipulation  |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "system";
+    object      blockMeshDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// WAAM Arc Welding Case
+// Domain: 100mm x 40mm x 100mm (X x Y x Z)
+// Y is vertical (build direction), Z is welding direction
+
+convertToMeters 0.001;
+
+vertices
+(
+    (-50 0 -50)//0
+    (50 0 -50)//1
+    (50 40 -50)//2
+    (-50 40 -50)//3
+    (-50 0 50)//4
+    (50 0 50)//5
+    (50 40 50)//6
+    (-50 40 50)//7
+);
+blocks
+(
+    hex (0 1 2 3 4 5 6 7) (20 16 20) simpleGrading (1 1 1)
+);
+
+edges
+(
+);
+
+boundary
+(
+
+    lowerWall
+    {
+        type wall;
+        faces
+        (
+            (3 7 6 2)
+        );
+    }
+
+    atmosphere
+    {
+        type patch;
+        faces
+        (
+            (1 5 4 0)
+        );
+    }
+    rightWall
+    {
+        type empty;
+        faces
+        (
+            (1 2 6 5)
+
+        );
+    }
+    leftWall
+    {
+        type empty;
+        faces
+        (
+            (0 4 7 3)
+        );
+    }
+    frontAndBack
+    {
+        type patch;
+        faces
+        (
+            (0 3 2 1)
+	    (5 6 7 4)
+        );
+    }
+);
+
+mergePatchPairs
+(
+);
+
+
+// ************************************************************************* //
