@@ -214,6 +214,14 @@ Description
             // ---- Correct temperature for fvOptions ----
             fvOptions.correct(Temperature);
 
+            // ---- Physical boiling cap (as in DEFAULT.edp) ----
+            // Latent heat of vaporization caps liquid temperature near Tvap (3300 K)
+            Temperature = min
+            (
+                max(Temperature, dimensionedScalar("TminBound", dimTemperature, 200.0)),
+                dimensionedScalar("TmaxCap", dimTemperature, 3300.0)
+            );
+
             // ========================================================================
             // PHASE FRACTION UPDATE (LEVER RULE)
             // ========================================================================

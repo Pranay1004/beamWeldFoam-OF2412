@@ -40,9 +40,18 @@ if (adjustTimeStep)
     scalar maxDeltaTFact =
         min(maxCo/(CoNum + SMALL), maxAlphaCo/(alphaCoNum + SMALL));
 
-    scalar deltaTFact = min(min(maxDeltaTFact, 1.0 + 0.1*maxDeltaTFact), 1.2);
+    // Deadband filtering: avoid reacting to small fluctuations around maxCo
+    scalar deltaTFact = 1.0;
+    if (maxDeltaTFact < 0.90)
+    {
+        deltaTFact = max(0.75, maxDeltaTFact);
+    }
+    else if (maxDeltaTFact > 1.10)
+    {
+        deltaTFact = min(1.05, 1.0 + 0.05*maxDeltaTFact);
+    }
 
-    scalar minDeltaT = runTime.controlDict().getOrDefault<scalar>("minDeltaT", 1.0e-8);
+    scalar minDeltaT = runTime.controlDict().getOrDefault<scalar>("minDeltaT", 1.0e-7);
 
     runTime.setDeltaT
     (

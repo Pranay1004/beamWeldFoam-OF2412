@@ -139,13 +139,18 @@ Description
     // during PIMPLE iterations at the onset of melting
     const volScalarField TclampU(max(Temperature, dimensionedScalar("TminU", dimTemperature, 1.0)));
 
+    // Cap pVap to physical atmospheric recoil scale (2 bar) to prevent explosive shockwaves
     pVap = min
     (
-        max((Temperature - (Tvap - (TSmooth/2.0)))/TSmooth, 0.0),
-        1.0
-    )*0.54*p0*Foam::exp
-    (
-        LatentHeatVap*Mm*((TclampU-Tvap)/(R*TclampU*Tvap))
+        min
+        (
+            max((Temperature - (Tvap - (TSmooth/2.0)))/TSmooth, 0.0),
+            1.0
+        )*0.54*p0*Foam::exp
+        (
+            LatentHeatVap*Mm*((TclampU-Tvap)/(R*TclampU*Tvap))
+        ),
+        dimensionedScalar("pVapMax", dimPressure, 2.0e5)
     );
 
     // ========================================================================
