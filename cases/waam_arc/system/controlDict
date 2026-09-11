@@ -17,41 +17,43 @@ FoamFile
 
 application     beamWeldFoam;
 
-startFrom       latestTime;
+startFrom       startTime;
 
 startTime       0;
 
 stopAt          endTime;
 
-endTime         1e-06;
+endTime         5;
 
 deltaT          1.0e-7;
 
 writeControl    adjustableRunTime;
 
-writeInterval   1e-07;
+writeInterval   0.01;
 
-purgeWrite      0;
+purgeWrite      20;
 
 writeFormat     ascii;
 
-writePrecision  10;
+writePrecision  8;
 
-writeCompression uncompressed;
+writeCompression off;
 
 timeFormat      general;
 
-timePrecision   10;
+timePrecision   8;
 
 runTimeModifiable yes;
 
 adjustTimeStep  yes;
 
-maxCo           0.1;
+maxCo           0.2;
 
-maxAlphaCo      0.1;
+maxAlphaCo      0.2;
 
-maxDeltaT       1.0e-5;
+maxDeltaT       2.0e-5;
 
+minDeltaT       1.0e-8;
 
 // ************************************************************************* //
+

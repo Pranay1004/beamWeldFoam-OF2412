@@ -28,24 +28,22 @@ boundaryField
     atmosphere
     {
         type            pressureInletOutletVelocity;
-        phi             phi;
         value           uniform (0 0 0);
-        z               (0 0 0);
     }
 
     rightWall
     {
-        type            empty;
+        type            slip;
     }
 
     leftWall
     {
-        type            empty;
+        type            slip;
     }
 
     frontAndBack
     {
-        type            noSlip;
+        type            slip;
     }
 }
 

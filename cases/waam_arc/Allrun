@@ -20,9 +20,6 @@ blockMesh -dict system/blockMeshDict
 echo "Setting fields..."
 setFields
 
-# Run beamWeldFoam (single processor for M4 Air 16GB)
+# Run beamWeldFoam (direct output to solver.log and terminal)
 echo "Starting beamWeldFoam..."
-beamWeldFoam > log 2>&1 &
-
-echo "Running in background. Check log for progress."
-echo "PID: $!"
+beamWeldFoam 2>&1 | tee solver.log

@@ -34,12 +34,12 @@ boundaryField
 
     rightWall
     {
-        type            empty;
+        type            zeroGradient;
     }
 
     leftWall
     {
-        type            empty;
+        type            zeroGradient;
     }
 
     frontAndBack
@@ -47,6 +47,5 @@ boundaryField
         type            zeroGradient;
     }
 }
-
 
 // ************************************************************************* //

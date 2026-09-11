@@ -1,5 +1,6 @@
 # OpenFOAM output timesteps (keep 0/ and initial/)
 [1-9]*/
+0.*/
 processor*/
 
 # Compiled objects and build artifacts
@@ -10,6 +11,7 @@ processor*/
 # Logs
 log
 *.log
+log.*
 
 # Temporary files
 *~
@@ -20,9 +22,8 @@ log
 # macOS
 .DS_Store
 
-# Python
-__pycache__/
-*.pyc
+# Analysis output
+cfd_history.*
 
 # Keep initial conditions
 !initial/

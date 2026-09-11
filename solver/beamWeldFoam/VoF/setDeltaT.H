@@ -1,55 +1,63 @@
 /*---------------------------------------------------------------------------*\
-  Adaptive Time Step Control for beamWeldFoam
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     | Website:  https://openfoam.org
+    \\  /    A nd           | Copyright (C) 2011-2018 OpenFOAM Foundation
+     \\/     M anipulation  |
+-------------------------------------------------------------------------------
+License
+    This file is part of OpenFOAM.
 
-  Adjusts the time step based on the Courant number to ensure stability.
-  The time step is limited by:
-      1. Max Courant number (maxCo from controlDict)
-      2. Max alpha Courant number (maxAlphaCo from controlDict)
-      3. Maximum time step (maxDeltaT from controlDict)
+    OpenFOAM is free software: you can redistribute it and/or modify it
+    under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
 
-  The adjustment formula is:
-      dt_new = min(maxCo * dt / Co, min(dt, maxDeltaT))
+    OpenFOAM is distributed in the hope that it will be useful, but WITHOUT
+    ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+    FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+    for more details.
 
-  This ensures that the Courant number stays below maxCo while not
-  increasing the time step beyond its current value or maxDeltaT.
+    You should have received a copy of the GNU General Public License
+    along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
 
-  Only adjusts on the first timestep (timeIndex == 0) if CoNum > SMALL.
-  Subsequent timesteps use the adjusted value.
+Global
+    setDeltaT
 
-  Original authors:
-      Thomas F. Flint, University of Manchester
-      Gowthaman Parivendhan, University College Dublin
-      Alojz Ivankovic, University College Dublin
-      Michael C. Smith, University of Manchester
-      Philip Cardiff, University College Dublin
+Description
+    Reset the timestep to maintain a constant maximum courant Number.
+    Reduction of time-step is immediate, but increase is damped to avoid
+    unstable oscillations.
 
-  OpenFOAM 2412 port by:
-      Pranay K. Pandey, Indian Institute of Space Science & Technology, Trivandrum
-      github.com/Pranay1004
+    OpenFOAM 2412 port by:
+        Pranay K. Pandey, Indian Institute of Space Science & Technology, Trivandrum
+        github.com/Pranay1004
 
 \*---------------------------------------------------------------------------*/
 
 if (adjustTimeStep)
 {
-    // ---- Adjust time step on first iteration ----
-    // Only adjust if the Courant number is significant (CoNum > SMALL)
-    if ((runTime.timeIndex() == 0) && (CoNum > SMALL))
-    {
-        runTime.setDeltaT
+    scalar maxDeltaTFact =
+        min(maxCo/(CoNum + SMALL), maxAlphaCo/(alphaCoNum + SMALL));
+
+    scalar deltaTFact = min(min(maxDeltaTFact, 1.0 + 0.1*maxDeltaTFact), 1.2);
+
+    scalar minDeltaT = runTime.controlDict().getOrDefault<scalar>("minDeltaT", 1.0e-8);
+
+    runTime.setDeltaT
+    (
+        max
         (
             min
             (
-                // ---- Co-based adjustment ----
-                // dt_new = maxCo * dt / Co
-                // This scales the time step to achieve the target Courant number
-                maxCo*runTime.deltaTValue()/CoNum,
+                deltaTFact*runTime.deltaTValue(),
+                maxDeltaT
+            ),
+            minDeltaT
+        )
+    );
 
-                // ---- Upper bound ----
-                // Don't increase dt beyond current value or maxDeltaT
-                min(runTime.deltaTValue(), maxDeltaT)
-            )
-        );
-    }
+    Info<< "deltaT = " <<  runTime.deltaTValue() << endl;
 }
 
 // ************************************************************************* //

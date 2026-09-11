@@ -36,12 +36,14 @@ boundaryField
 
     rightWall
     {
-        type            empty;
+        type            fixedFluxPressure;
+        value           uniform 0;
     }
 
     leftWall
     {
-        type            empty;
+        type            fixedFluxPressure;
+        value           uniform 0;
     }
 
     frontAndBack

@@ -143,14 +143,18 @@ Description
             // Qv = Hertz-Knudsen evaporation rate * latent heat
             // Activated when T > Tvap - TSmooth/2
             // Qv = 0.82 * LatentHeatVap * Mm * p0 * exp(...) / sqrt(2*pi*Mm*R*T)
+            // ---- Clamp temperature for evaporation model ----
+            // Prevents pow(negative, 0.5) FPE during transient PIMPLE iterations
+            const volScalarField Tclamp(max(Temperature, dimensionedScalar("Tmin", dimTemperature, 1.0)));
+
             Qv = min
             (
                 max((Temperature - (Tvap - (TSmooth/2.0)))/TSmooth, 0.0),
                 1.0
             )*0.82*LatentHeatVap*Mm*p0*Foam::exp
             (
-                LatentHeatVap*Mm*((Temperature-Tvap)/(R*Temperature*Tvap))
-            )/Foam::pow(2*M_PI*Mm*R*Temperature,0.5);
+                LatentHeatVap*Mm*((Tclamp-Tvap)/(R*Tclamp*Tvap))
+            )/Foam::pow(2*M_PI*Mm*R*Tclamp,0.5);
 
             // ========================================================================
             // THERMAL DAMPING

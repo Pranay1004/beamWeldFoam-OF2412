@@ -134,13 +134,18 @@ Description
     // pVap = 0.54 * p0 * exp(LatentHeatVap * Mm * (T-Tvap) / (R*T*Tvap))
     // The smooth step function (0 to 1) activates only when T > Tvap - TSmooth/2
     // pVap pushes the liquid surface downward (recoil from evaporation)
+    // ---- Clamp temperature for vapor recoil model ----
+    // Prevents exp() overflow (sigFpe) when T transiently goes negative
+    // during PIMPLE iterations at the onset of melting
+    const volScalarField TclampU(max(Temperature, dimensionedScalar("TminU", dimTemperature, 1.0)));
+
     pVap = min
     (
         max((Temperature - (Tvap - (TSmooth/2.0)))/TSmooth, 0.0),
         1.0
     )*0.54*p0*Foam::exp
     (
-        LatentHeatVap*Mm*((Temperature-Tvap)/(R*Temperature*Tvap))
+        LatentHeatVap*Mm*((TclampU-Tvap)/(R*TclampU*Tvap))
     );
 
     // ========================================================================

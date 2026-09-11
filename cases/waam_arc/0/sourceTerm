@@ -34,11 +34,13 @@ boundaryField
     }
     rightWall
     {
-        type            empty;
+        type            calculated;
+        value           uniform 0;
     }
     leftWall
     {
-        type            empty;
+        type            calculated;
+        value           uniform 0;
     }
     frontAndBack
     {
