@@ -38,6 +38,7 @@ solvers
         solver          GAMG;
         tolerance       1e-9;
         relTol          0.0;
+        minIter         1;
         smoother        GaussSeidel;
         nPreSweeps      2;
         nPostSweeps     3;
@@ -68,6 +69,7 @@ solvers
         }
         tolerance       1e-9;
         relTol          0;
+        minIter         1;
         maxIter         25;
     }
 
@@ -140,7 +142,7 @@ MELTING
     HS_bg           0.0;          // Beam gaussian offset [m] (centred at x=0)
     HS_velocity     0.010;        // Arc travel velocity [m/s] (along +z)
     HS_lg           -0.025;       // Start position at z=-25mm for 50mm 5s travel
-    HS_Q            3840.0;       // Net Arc power [W] (DEFAULT.edp)
+    HS_Q            850.0;        // Calibrated surface arc power [W] (matches DEFAULT.edp T_peak=2200-2400K)
 
     HS_deposition_cutoff 0.5;
 
