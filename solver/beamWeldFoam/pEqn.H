@@ -118,9 +118,8 @@ Description
     (
         (
             mixture.surfaceTensionForce()*fvc::interpolate(damper)
-        +fvc::interpolate(pVap)*fvc::snGrad(alpha1)*fvc::interpolate(damper)
+        + fvc::interpolate(pVap)*fvc::snGrad(alpha1)*fvc::interpolate(damper)
           - ghf*fvc::snGrad(rho*rhok)
-          - fvc::snGrad(p_rgh)
         )*rAUf*mesh.magSf()
     );
 
