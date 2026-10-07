@@ -11,5 +11,92 @@ then
     exit 1
 fi
 
+# Check that a compiler can link against the installed OpenFOAM libraries.
+# Toolchains shipped by conda environments (eg. pato) carry an old glibc
+# sysroot which cannot resolve the symbols of the system libraries, so a
+# build that works everywhere else fails at the link stage here.
+canLinkOpenFOAM()
+{
+    [[ -n "${FOAM_LIBBIN:-}" ]] || return 0
+
+    local dir status
+    dir="$(mktemp -d)"
+    printf 'int main() { return 0; }\n' > "$dir/t.C"
+
+    if "$1" -o "$dir/t" "$dir/t.C" \
+        -L"$FOAM_LIBBIN" -lturbulenceModels -lfiniteVolume \
+        > "$dir/out" 2>&1
+    then
+        status=0
+    else
+        status=1
+    fi
+
+    cat "$dir/out"
+    rm -rf "$dir"
+    return $status
+}
+
+cxx="$(command -v g++ || true)"
+if [[ -z "$cxx" ]]
+then
+    echo "Error: no g++ found on PATH"
+    exit 1
+fi
+
+if ! err="$(canLinkOpenFOAM "$cxx")"
+then
+    echo "g++ ($cxx) cannot link against the OpenFOAM libraries,"
+    echo "searching for another compiler..."
+    if [[ -n "$err" ]]
+    then
+        echo "$err" | sed -n '1,5p'
+    fi
+
+    shim="$(mktemp -d)"
+    trap 'rm -rf "$shim"' EXIT
+
+    for candidate in g++-15 g++-14 g++-13 g++-12 g++-11 g++-10 g++-9 g++-8 /usr/bin/g++
+    do
+        path="$(command -v "$candidate" || true)"
+        [[ -n "$path" && "$path" != "$cxx" ]] || continue
+
+        if canLinkOpenFOAM "$path" > /dev/null
+        then
+            ln -s "$path" "$shim/g++"
+            case "$path" in
+                *g++-*) gcc_path="${path/g++/gcc}" ;;
+                *)      gcc_path="${path%g++}gcc" ;;
+            esac
+            if [[ -x "$gcc_path" ]]
+            then
+                ln -s "$gcc_path" "$shim/gcc"
+            fi
+
+            # Also hide any toolchain that comes first on PATH (eg. conda),
+            # otherwise the linker driver picks up its ld/as again
+            for tool in ld as ar
+            do
+                if [[ -x "/usr/bin/$tool" ]]
+                then
+                    ln -s "/usr/bin/$tool" "$shim/$tool"
+                fi
+            done
+
+            PATH="$shim:$PATH"
+            export PATH
+            cxx="$path"
+            echo "Using $cxx"
+            break
+        fi
+    done
+
+    if [[ ! -x "$shim/g++" ]]
+    then
+        echo "Error: no C++ compiler able to link the OpenFOAM libraries was found"
+        exit 1
+    fi
+fi
+
 # Compile solver
 (cd applications/solvers/beamWeldFoam && wmake)
