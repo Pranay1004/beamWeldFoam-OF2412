@@ -1,7 +1,8 @@
 #!/bin/sh
+cd ${0%/*} || exit 1    # Run from this directory
 
 cp -r initial 0
 blockMesh
 setFields
 decomposePar
-mpirun.openmpi -np 6 FusionFoam -parallel >log &
+mpirun.openmpi -np 6 beamWeldFoam -parallel >log &
