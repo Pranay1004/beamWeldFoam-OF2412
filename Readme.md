@@ -1,112 +1,272 @@
-## beamWeldFoam
+# beamWeldFoam (OpenFOAM v2412)
+
+Open-source volume-of-fluid (VOF) solver for high-energy-density advanced
+manufacturing processes — laser welding, electron-beam welding, arc welding and
+additive manufacturing.
+
+This repository is a port of
+[tomflint22/beamWeldFoam](https://github.com/tomflint22/beamWeldFoam)
+(upstream developed against OpenFOAM 6) to **OpenFOAM v2412**
+(the openfoam.com release, `v2412`).
+
+---
 
 ## Overview
-Presented here is the extensible open-source volume-of-fluid (VOF) solver beamWeldFoam, for studying high energy density advanced manufacturing processes. In this implementation the metallic substrate, and shielding gas phase, are treated as in-compressible. The solver fully captures the fusion/melting state transition of the metallic substrate. For the vapourisation of the substrate, the explicit volumetric dilation due to the vapourisation state transition is neglected, instead, a phenomenological recoil pressure term is used to capture the contribution to the momentum and energy fields due to vaporisation events. beamWeldFoam also captures surface tension effects, the temperature dependence of surface tension (Marangoni) effects, latent heat effects due to melting/fusion (and vapourisation), buoyancy effects due to the thermal expansion of the phases using a Boussinesq approximation, momentum damping due to solidification, and a representative heat source description of an incident laser/electron beam heat source. The heat source can also be modified to be representative of arc-welding processes.
-The solver approach is based on the adiabatic two-phase interFoam code developed by [OpenCFD Ltd.](http://openfoam.com/). Target applications for beamWeldFoam include:
 
-* Laser Welding
-* Electron Beam Welding
-* Arc Welding
-* Additive Manufacturing
+In this implementation the metallic substrate and the shielding gas phase are
+treated as incompressible. The solver fully captures the fusion/melting state
+transition of the metallic substrate. For the vapourisation of the substrate the
+explicit volumetric dilation due to the vapourisation state transition is
+neglected; instead a phenomenological recoil-pressure term captures the
+contribution to the momentum and energy fields due to vapourisation events.
 
-## Installation
+beamWeldFoam also captures:
 
-The current version of the code utilises the [OpenFoam6 libraries](https://openfoam.org/version/6/). The code has been developed and tested using an Ubuntu installation, but should work on any operating system capable of installing OpenFoam. To install the beamWeldFoam solver, first follow the instructions on this page: [OpenFoam 6 Install](https://openfoam.org/download/6-ubuntu/) to install the OpenFoam 6 libraries.
+* surface tension effects, and their temperature dependence (Marangoni),
+* latent heat effects due to melting/fusion (and vapourisation),
+* buoyancy due to thermal expansion of the phases (Boussinesq approximation),
+* momentum damping due to solidification,
+* a representative heat source for an incident laser/electron beam, which can
+  also be configured to represent arc-welding processes.
 
-To use with OpenFoam10 - please select the OF10 branch.
+The solver approach is based on the adiabatic two-phase `interFoam` code
+developed by [OpenCFD Ltd.](https://www.openfoam.com/).
 
+---
 
+## Requirements
 
-Then navigate to a working folder in a shell terminal, clone the git code repository, and build.
+| Component | Notes |
+|---|---|
+| OpenFOAM **v2412** | openfoam.com release, e.g. the `openfoam2412` apt package, installed under `/usr/lib/openfoam/openfoam2412` |
+| C++17 compiler | `g++` 9 or newer recommended |
+| `make`, `git` | standard build tools |
+| OpenMPI | only needed for parallel runs (`decomposePar` / `mpirun`) |
 
+The OpenFOAM environment must be sourced in every shell you use:
+
+```bash
+source /usr/lib/openfoam/openfoam2412/etc/bashrc
 ```
-$ git clone https://github.com/tomflint22/beamWeldFoam.git beamWeldFoam
-$ cd beamWeldFoam/applications/solvers/beamWeldFoam/
-$ wclean
-$ wmake
+
+(Adjust the path if OpenFOAM v2412 is installed elsewhere; add the line to
+`~/.bashrc` to make it permanent.)
+
+---
+
+## Building
+
+```bash
+git clone https://github.com/Pranay1004/beamWeldFoam-OF2412.git
+cd beamWeldFoam-OF2412
+./Allwmake
 ```
-The installation can be tested using the tutorial cases described below.
+
+`Allwmake` will:
+
+1. stop with a clear message if OpenFOAM has not been sourced,
+2. link-test the compiler found first on `PATH` against the OpenFOAM libraries,
+   and automatically fall back to a system compiler (e.g. `g++-9`) if the active
+   toolchain cannot link them — this happens with conda toolchains, which ship
+   an old glibc sysroot that cannot resolve OpenFOAM's symbols,
+3. compile the solver with `wmake` into `$FOAM_USER_APPBIN`.
+
+Clean the build with:
+
+```bash
+./Allwclean
+```
+
+Check the result:
+
+```bash
+beamWeldFoam -help
+```
+
+### Optional: install for all users / any directory
+
+The build lands in your user directory
+(`$FOAM_USER_APPBIN`, which is on `PATH`). To also make it available from the
+main OpenFOAM installation for every user:
+
+```bash
+sudo cp $FOAM_USER_APPBIN/beamWeldFoam $FOAM_APPBIN/
+```
+
+`$FOAM_APPBIN` is `/usr/lib/openfoam/openfoam2412/platforms/linux64GccDPInt32Opt/bin`,
+where all standard OpenFOAM solvers live, so afterwards `beamWeldFoam` can be
+called from any case directory without any extra setup.
+
+---
+
+## Running a case
+
+Every tutorial keeps its initial fields in `initial/` rather than `0/`.
+From inside a case directory:
+
+```bash
+cp -r initial 0        # create the initial time directory
+blockMesh              # generate the mesh
+setFields              # initialise the phase field
+beamWeldFoam           # run in serial
+```
+
+Parallel (6 ranks in this example):
+
+```bash
+cp -r initial 0
+blockMesh
+setFields
+decomposePar
+mpirun -np 6 beamWeldFoam -parallel
+reconstructPar
+```
+
+Redirect any of these commands if you want to keep a log, e.g.
+`blockMesh > log.blockMesh 2>&1`.
+
+Remove previous results before re-running (`rm -rf 0* [1-9]* processor* log`),
+or use the provided `Allclean` scripts.
+
+`PowderBed2D` and `PowderBed3D` ship ready-made run scripts:
+
+```bash
+cd tutorials/PowderBed2D
+./Allrun              # serial
+./Allrun parallel     # parallel (decomposePar / runParallel / reconstructPar)
+```
+
+---
 
 ## Tutorial cases
-To run any of the tutorials in serial mode:
-```
-delete any old simulation files, e.g:
-$ rm -r 0* 1* 2* 3* 4* 5* 6* 7* 8* 9*
-Then:
-$ cp -r initial 0
-$ blockMesh
-$ setFields
-$ beamWeldFoam
-```
-For parallel deployment, using MPI, following the setFields command:
-```
-$ decomposePar
-$ mpirun -np 6 beamWeldFoam -parallel >log &
-```
-for deployment on 6 cores.
 
-### Gallium Melting Case
-A commonly used validation case for heat and mass transfer where melting and solidification is involved, is the simulation of Gallium melting in an enclosed container. In this example the beamWeldFoam solver is used to simulate the melting of the Gallium and the subsequent flow due to buoyancy. as time progresses the hot wall on the left-hand-side of the computational domain causes the Gallium in the local vicinity to melt. As the melt volume increases, buoyancy driven flow begings to dominate as the hot liquid Gallium rises and generates vortical flow structures in the liquid. The predicted melt profiles are in excellent agreement with those reported elsewhere, both numerically and experimentally [1].
+| Case | Description | Mesh |
+|---|---|---|
+| `Test` | Minimal smoke-test case — start here to verify the build | 1 × 60 × 60 (2D) |
+| `GalluimCase` | Gallium melting in a cavity: melting, buoyancy-driven flow and solidification — classic validation case [1] | 1 × 140 × 100 |
+| `GalluimCase3D` | 3D version of the gallium melting case | 120 × 280 × 200 |
+| `SenDavies` | Marangoni (thermocapillary) flow in a partially filled cavity with a flat interface and imposed temperature gradient; analytical steady-state solution available [2] | 1 × 240 × 480 |
+| `ArcCase` | Arc welding: surface heat flux on a substrate between two gas regions, with power ramp-down after 0.25 s and extinguishing at 0.35 s; shows Marangoni-driven surface flow and weld-pool penetration | 1 × 60 × 120 |
+| `SingleParticleMelting2D` | Melting of a single particle | 1 × 60 × 60 |
+| `PowderBed2D` | Laser powder-bed (additive manufacturing) case with `LaserProperties` heat-source dictionary | 1 × 240 × 480 |
+| `PowderBed3D` | 3D powder-bed case | 60 × 60 × 60 |
+| `EB_3D` | 3D high-energy-beam welding case | 60 × 60 × 240 |
+| `Tancase` | Welding benchmark case | 1 × 50 × 150 |
 
-### Marangoni Flow (Sen and Davies) Case
-Another useful validation case for the solver is one in which a 2D cavity is partially filled such that the interface between the phases is initially flat. A temperature gradient is then developed across the domain. This temperature gradient induces a flow tangential to the interface due to the dependence on temperature of the surface tension, aka Marangoni flow. An analytical steasy-state solution for the free surface deformation exists for this case [2]. excellent agreement between the beamWeldFoam solver and the analytical solution is observed.
+The gallium melting and Sen & Davies cases reproduce experimental/analytical
+data from the literature and serve as validation of the implementation; the
+welding cases exercise the heat source, Marangoni flow, solidification damping
+and phase-change treatment (a Ti6Al4V laser butt-weld validation is reported in
+[3]).
 
-### Arc Welding Case
-In this example a surface heat flux is applied to an Aluminium substrate representative of an arc-welding process. In this scenario, a metallic substrate is present in the domain, between two regions of Argon gas. The heat source is applied at t=0s, and at t=0.25s the power begins to ramp down until at t=0.35s the heat source is fully extinguished.Shortly following the extinction of the heat source the domain fully solidifies. The effect of Marangoni driven flow can clearly be seen in this example, as the surface flows are driven from regions of higher temperature to regions of lower temperature (due to the decrease in surface tension with temperature). Furthermore, once the weld-pool has fully penetrated the domain, surface tension prevents the material from falling out of the bottom of the substrate.
-
-### Beam Welding Case
-In this example beamWeldFoam is applied to simulate the power beam welding of a titanium alloy substrate. In this case, Ti6Al4V butt joints welded by a laser beam is simulated and the results are validated with the experimental study [3].
+---
 
 ## Algorithm
 
-Initially the solver loads the mesh, reads in fields and boundary conditions, reads certain mesh information into arrays (for the heat source application), selects the turbulence model (if specified). The main solver loop is then initiated. First, the time step is
-dynamically modified to ensure numerical stability. Next, the two-phase fluid mixture properties and turbulence quantities are updated. The discretized phase-fraction equation is then solved for a user-defined number of subtime steps (typically 3) using the multidimensional universal limiter with explicit solution solver [MULES](https://openfoam.org/release/2-3-0/multiphase/). This solver is included in the OpenFOAM library, and performs conservative solution of hyperbolic convective transport equations with defined bounds (0 and 1 for α1). Once the updated phase field is obtained, the program enters the pressure–velocity loop, in which p and u are corrected in an alternating fashion. In this loop T is also solved for, such that he buoyancy predictions are correct for the U and p fields. The process of correcting the pressure and velocity fields in sequence is known as pressure implicit with splitting of operators (PISO). In the OpenFOAM environment, PISO is repeated for multiple iterations at each time step. This process is referred to as merged PISO- semi-implicit method for pressure-linked equations (SIMPLE), or the pressure-velocity loop (PIMPLE) process, where SIMPLE is an iterative pressure–velocity solution algorithm. PIMPLE continues for a user specified number of iterations. 
-The main solver loop iterates until program termination. A summary of the simulation algorithm is presented below:
-* beamWeldFoam Simulation Algorithm Summary:
-  * Initialize simulation data and mesh 
-  * WHILE t<t_end DO
-  * 1. Update delta_t for stability
-  * 2. Phase equation sub-cycle
-  * 3. Update interface location for heat source application
-  * 4. Update fluid properties
-  * 5. PISO Loop
-    * 1. Form u equation
-    * 2. Energy Transport Loop
-      * 1. Solve T equation
-      * 2. Update fluid fraction field
-      * 3. Re-evaluate source terms due to latent heat
-    * 3. PISO
-        * 1. Obtain and correct face fluxes
-        * 2. Solve p-Poisson equation
-        * 3. Correct u
-  * 6. Write Fields
-  
-Two sample tutorial cases, i.e. Gallium Meliing, and Sen and Davies cases are in strong agreement with experimental and analytical data available in the literature and serve as the validation cases for the implementation in beamWeldFoam.
+Initially the solver loads the mesh, reads in fields and boundary conditions,
+reads certain mesh information into arrays (for the heat source application),
+and selects the turbulence model (if specified). The main solver loop is then
+initiated. First the time step is dynamically modified to ensure numerical
+stability. Next, the two-phase fluid mixture properties and turbulence
+quantities are updated. The discretized phase-fraction equation is then solved
+for a user-defined number of sub-time steps (typically 3) using the
+multidimensional universal limiter with explicit solution solver
+[MULES](https://openfoam.org/release/2-3-0/multiphase/), which performs
+conservative solution of hyperbolic convective transport equations with defined
+bounds (0 and 1 for α₁). Once the updated phase field is obtained, the program
+enters the pressure–velocity loop, in which *p* and *U* are corrected in an
+alternating fashion; *T* is also solved here so that the buoyancy predictions
+are consistent with the *U* and *p* fields. The sequential correction of
+pressure and velocity is the pressure implicit with splitting of operators
+(PISO) algorithm. In OpenFOAM, PISO may be repeated for multiple iterations at
+each time step; combined with SIMPLE-type outer iterations this is the merged
+PIMPLE algorithm, run for a user-specified number of outer correctors.
+
+The main solver loop iterates until program termination:
+
+* **beamWeldFoam simulation algorithm summary**
+  * Initialize simulation data and mesh
+  * **WHILE** t < t_end **DO**
+    1. Update Δt for stability
+    2. Phase-equation sub-cycle
+    3. Update interface location for heat-source application
+    4. Update fluid properties
+    5. PISO loop
+       1. Form the *U* equation
+       2. Energy transport loop
+          1. Solve the *T* equation
+          2. Update the fluid-fraction field
+          3. Re-evaluate source terms due to latent heat
+       3. PISO
+          1. Obtain and correct face fluxes
+          2. Solve the *p*-Poisson equation
+          3. Correct *U*
+    6. Write fields
+
+---
+
+## Repository layout
+
+```
+beamWeldFoam-OF2412/
+├── Allwmake                     build the solver (with compiler fallback)
+├── Allwclean                    remove build products
+├── applications/
+│   └── solvers/beamWeldFoam/    solver sources (beamWeldFoam.C + *.H, VoF/)
+│       └── Make/                wmake files/options
+└── tutorials/                   example cases (initial/ + system/ + constant/)
+```
+
+---
+
+## Changes vs. upstream (OpenFOAM 6 → v2412)
+
+* `dimensionedScalar` lookups, `CorrectPhi.H` inclusion and the VoF
+  time-step headers updated for the v2412 API (lowercase `small`/`great` are
+  only available under `COMPAT_OPENFOAM_ORG`, so `SMALL`/`GREAT` are used).
+* `Allwmake` now link-tests the active compiler and falls back to a system
+  compiler when a toolchain (e.g. conda) cannot link the OpenFOAM libraries.
+* Mismatched braces in the `relaxationFactors` dictionary of four tutorials
+  corrected (they previously aborted `setFields` on v2412).
+* Stale solver name in `tutorials/ArcCase/Allrun` corrected.
+
+---
 
 ## License
-OpenFoam, and by extension the beamWeldFoam application, is licensed free and open source only under the [GNU General Public Licence version 3](https://www.gnu.org/licenses/gpl-3.0.en.html). One reason for OpenFOAM’s popularity is that its users are granted the freedom to modify and redistribute the software and have a right of continued free use, within the terms of the GPL.
+
+OpenFOAM, and by extension the beamWeldFoam application, is licensed free and
+open source only under the
+[GNU General Public Licence version 3](https://www.gnu.org/licenses/gpl-3.0.en.html).
+One reason for OpenFOAM's popularity is that its users are granted the freedom
+to modify and redistribute the software and have a right of continued free use,
+within the terms of the GPL.
 
 ## Acknowledgements
-The work was generously supported by the Engineering and Physical Sciences Research Council (EPSRC) under the ''Cobalt-free Hard-facing for Reactor Systems'' grant EP/T016728/1, and Science Foundation Ireland (SFI), co-funded under European Regional Development Fund and by I-Form industry partners, grant 16/RC/3872.
 
-## Citing This Work
-If you use beamWeldFoam in your work. Please use the following to cite our work:
+The work was generously supported by the Engineering and Physical Sciences
+Research Council (EPSRC) under the "Cobalt-free Hard-facing for Reactor
+Systems" grant EP/T016728/1, and Science Foundation Ireland (SFI), co-funded
+under European Regional Development Fund and by I-Form industry partners,
+grant 16/RC/3872.
 
-Thomas F. Flint, Gowthaman Parivendhan, Alojz Ivankovic, Michael C. Smith, Philip Cardiff,
-beamWeldFoam: Numerical simulation of high energy density fusion and vapourisation-inducing processes,
-SoftwareX,
-Volume 18,
-2022,
-101065,
-ISSN 2352-7110,
-https://doi.org/10.1016/j.softx.2022.101065
+## Citing this work
+
+If you use beamWeldFoam in your work, please cite:
+
+> Thomas F. Flint, Gowthaman Parivendhan, Alojz Ivankovic, Michael C. Smith,
+> Philip Cardiff,
+> *beamWeldFoam: Numerical simulation of high energy density fusion and
+> vapourisation-inducing processes*,
+> SoftwareX, Volume 18, 2022, 101065, ISSN 2352-7110,
+> https://doi.org/10.1016/j.softx.2022.101065
 
 ## References
-* Kay Wittig and Petr A Nikrityuk 2012 IOP Conf. Ser.: Mater. Sci. Eng. 27 012054
-* Sen, A., & Davis, S. (1982). Steady thermocapillary flows in two-dimensional slots. Journal of Fluid Mechanics, 121, 163-186. doi:10.1017/S0022112082001840
-* Sabina L. Campanelli, Giuseppe Casalino, Michelangelo Mortello, Andrea Angelastro, Antonio Domenico Ludovico, Microstructural Characteristics and Mechanical Properties of Ti6Al4V Alloy Fiber Laser Welds
 
-
-![visitors](https://visitor-badge.deta.dev/badge?page_id=tomflint22.beamWeldFoam)
-
-
+1. Kay Wittig and Petr A. Nikrityuk, *IOP Conf. Ser.: Mater. Sci. Eng.* **27**
+   012054 (2012).
+2. Sen, A., & Davis, S. (1982). Steady thermocapillary flows in two-dimensional
+   slots. *Journal of Fluid Mechanics*, 121, 163–186.
+   doi:10.1017/S0022112082001840
+3. S. L. Campanelli, G. Casalino, M. Mortello, A. Angelastro, A. D. Ludovico,
+   *Microstructural Characteristics and Mechanical Properties of Ti6Al4V Alloy
+   Fiber Laser Welds*.
