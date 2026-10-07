@@ -162,7 +162,6 @@ damperSwitch false;//true;
 
 relaxationFactors
 {
-}
     "U.*"           0.82;//0.82;//1;
 }
 
