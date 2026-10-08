@@ -33,9 +33,9 @@ gradSchemes
 
 divSchemes
 {
-    div(rhoPhi,U)  Gauss linearUpwind grad(U);
+    div(rhoPhi,U)  Gauss upwind;
 
-    div((interpolate(epsilon1mask)*rhoPhi),U)    Gauss linearUpwind grad(U);
+    div((interpolate(epsilon1mask)*rhoPhi),U)    Gauss upwind;
 
     div(phi,alpha)  Gauss vanLeer;
     div(phirb,alpha) Gauss linear;

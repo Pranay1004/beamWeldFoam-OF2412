@@ -19,24 +19,30 @@ phases (phase1 phase2);
 
 phase1
 {
+    // Austenitic stainless steel 308L (substrate / deposited metal)
     transportModel  Newtonian;
-    nu              1.0e-06;
-    rho             2710;
-    cp  1127;
-    cpsolid 896.0;
-    kappa  100.0;
-	kappasolid  237.0; 
-	Tsolidus 927;
-	Tliquidus 945;
-    LatentHeat 396666;
-    beta    1.0e-5;
+    nu              7.5e-07;    // liquid, ~6 mPa.s at 7900 kg/m3
+    rho             7900;
+    cp              800;        // liquid
+    cpsolid         500;        // solid
+    kappa           30.0;       // liquid
+    kappasolid      20.0;       // solid
+    Tsolidus        1673;       // 1400 C
+    Tliquidus       1723;       // 1450 C
+    LatentHeat      270000;     // 270 kJ/kg
+    beta            1.6e-5;
 }
 
 phase2
 {
     transportModel  Newtonian;
-    nu              1.48e-05;
-    rho             0.1;
+    nu              1.0e-03;    // raised for stability: damps the hot gas
+                               // plume (which otherwise limits deltaT);
+                               // gas shear on the pool stays negligible
+                               // next to Marangoni stresses
+    rho             1.0;        // air-like gas inertia (was 0.1: the
+                               // 79000:1 metal/gas density ratio destabilises
+                               // the pressure-velocity coupling)
     cp  500;
 cpsolid 500;
     kappa  0.016;
@@ -47,12 +53,12 @@ kappasolid 0.016;
     beta    1.0e-5;
 }
 
-sigma            0.8;//1.5;
-dsigmadT	-0.1e-4;
+sigma           1.85;   // Fe, at melting
+dsigmadT        -0.4e-3;// Marangoni coefficient, Fe
 
 p0		100000.0;
-Tvap 2743.0;
-Mm 0.027;
-LatentHeatVap 10.518518e6;
+Tvap 3135.0;    // Fe boiling point, 2862 C
+Mm 0.0558;      // Fe molar mass
+LatentHeatVap 6.1e6;    // Fe, ~6.1 MJ/kg
 
 // ************************************************************************* //

@@ -67,3 +67,9 @@ linuxming*/
 SiCortex*Gcc*/
 solaris*Gcc*/
 SunOS*Gcc*/
+
+# OpenFOAM runtime output
+postProcessing
+log.*
+postProcess.png
+postProcess.timeseries.csv

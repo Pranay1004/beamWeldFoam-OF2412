@@ -29,14 +29,34 @@
         damper = 2.0 * rho /(rho1+rho2); //To account for high density difference
     }
 
+    // Tpos: see TEqn.H - keeps the recoil-pressure exponential defined
+    // if an explicit overshoot ever drives a cell to T <= 0 (no change
+    // for physical cells).
+    const volScalarField TposU
+    (
+        max
+        (
+            Temperature,
+            dimensionedScalar("TposU", Temperature.dimensions(), SMALL)
+        )
+    );
+
+    // recoilScale (MELTING dict, default 1 = upstream behaviour): the
+    // equilibrium vapour recoil 0.54*p0 overestimates digging for an arc
+    // welding pool sitting in a ~1 atm plasma, so only a fraction is
+    // applied as mechanical load. The evaporative heat sink Qv in TEqn.H
+    // is intentionally left untouched, so the temperature field (and the
+    // recoil evaluation point on the p_sat curve) does not move.
+    scalar recoilScale(meltingDict.lookupOrDefault<scalar>("recoilScale", 1.0));
+
     pVap = min
     (
         max((Temperature - (Tvap - (TSmooth/2.0)))/TSmooth, 0.0),
         1.0
     )*0.54*p0*Foam::exp
     (
-        LatentHeatVap*Mm*((Temperature-Tvap)/(R*Temperature*Tvap))
-    );
+        LatentHeatVap*Mm*((TposU-Tvap)/(R*TposU*Tvap))
+    )*recoilScale;
 
     fvVectorMatrix UEqn
     (

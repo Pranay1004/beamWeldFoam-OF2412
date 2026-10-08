@@ -15,7 +15,7 @@ FoamFile
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-application     Flint_multiphaseEulerFoamD;
+application     beamWeldFoam;
 
 startFrom       latestTime;
 
@@ -23,13 +23,14 @@ startTime       0;
 
 stopAt          endTime;
 
-endTime         0.9;
+// One pass over the 8 mm domain at 500 mm/min = 0.96 s of travel
+endTime         1.0;
 
-deltaT          1.0e-7;
+deltaT          5.0e-7;
 
 writeControl    adjustableRunTime;
 
-writeInterval   2e-03;
+writeInterval   0.01;
 
 purgeWrite      0;
 
@@ -37,7 +38,7 @@ writeFormat     ascii;
 
 writePrecision  10;
 
-writeCompression uncompressed;
+writeCompression off;
 
 timeFormat      general;
 
@@ -47,10 +48,101 @@ runTimeModifiable yes;
 
 adjustTimeStep  yes;
 
-maxCo           0.1;//0.1;
-maxAlphaCo      0.1;
+maxCo           0.5;//0.1;
 
-maxDeltaT       1.0e-5;
+maxAlphaCo      0.25;
+
+maxDeltaT       5.0e-6;     // cap: above ~1e-5 s the epsilon1/temperature
+                            // corrector falls into a 0<->1 limit cycle
+                            // (max residual stuck at 1.0) and the run dies
+minDeltaT       10e-8;
+
+functions
+{
+    // Peak temperature in the domain [K]
+    temperatureMax
+    {
+        type            volFieldValue;
+        libs            (fieldFunctionObjects);
+        regionType      all;
+        operation       max;
+        fields          (Temperature);
+        writeControl    timeStep;
+        writeInterval   100;
+        executeControl  timeStep;
+        executeInterval 100;
+        writeFields     false;
+        log             false;
+    }
+
+    // Melted metal volume [m3]: epsilon1 (liquid fraction) weighted by
+    // alpha.phase1, because in the gas phase epsilon1 is identically 1
+    // (phase2 Tsolidus 1 / Tliquidus 10)
+    meltVolume
+    {
+        type            volFieldValue;
+        libs            (fieldFunctionObjects);
+        regionType      all;
+        operation       weightedVolIntegrate;
+        fields          (epsilon1);
+        weightField     alpha.phase1;
+        writeControl    timeStep;
+        writeInterval   100;
+        executeControl  timeStep;
+        executeInterval 100;
+        writeFields     false;
+        log             false;
+    }
+
+    // Total metal volume [m3]: constant (no mass sources), conservation check
+    metalVolume
+    {
+        type            volFieldValue;
+        libs            (fieldFunctionObjects);
+        regionType      all;
+        operation       volIntegrate;
+        fields          (alpha.phase1);
+        writeControl    timeStep;
+        writeInterval   100;
+        executeControl  timeStep;
+        executeInterval 100;
+        writeFields     false;
+        log             false;
+    }
+
+    // History probes: arc-side (top) surface, mid-thickness, back surface,
+    // gas above the plate, and the arc start point.
+    // Plate occupies y = 1..3 mm; arc impinges on y = 1 mm face and travels
+    // towards +z; probe at z = -3.75 mm is reached at t = 0.03 s.
+    temperatureProbes
+    {
+        type            probes;
+        libs            (sampling);
+        fields          (Temperature epsilon1);
+        probeLocations
+        (
+            (0 0.0010333 -0.00375) // plate top (arc side)
+            (0 0.0020000 -0.00375) // plate mid-thickness
+            (0 0.0029667 -0.00375) // plate bottom (back side)
+            (0 0.0009667 -0.00375) // gas gap above the plate
+            (0 0.0010333 -0.00400) // arc start point, plate top
+        );
+        fixedLocations  true;
+        executeControl  timeStep;
+        executeInterval 100;
+        writeControl    timeStep;
+        writeInterval   100;
+    }
+
+    // Cell centres (Cx, Cy, Cz) for the post-processing script
+    cellCentres
+    {
+        type            writeCellCentres;
+        libs            (fieldFunctionObjects);
+        executeControl  onEnd;
+        writeControl    onEnd;
+    }
+}
 
 
 // ************************************************************************* //

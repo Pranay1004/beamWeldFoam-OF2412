@@ -21,8 +21,10 @@ solvers
     {
         nAlphaCorr      3;
         nAlphaSubCycles 3;
-        cAlpha          1.0;
-	scAlpha		0.5;
+        cAlpha          1.0;    // sharp interface: 0.5 gave a diffuse
+                               // interface with a steady MULES clipping leak
+	scAlpha		0.0;    // no extra shear compression (test): it may tear
+                               // droplets off the pool under Marangoni shear
 
         MULESCorr       yes;
         nLimiterIter    5;
@@ -125,7 +127,8 @@ solvers
 
 PIMPLE
 {
-    nOuterCorrectors 1;
+    nOuterCorrectors 2;     // 2 outer iterations for the stiff
+                            // Marangoni/recoil coupling (was 1)
     nCorrectors     3;
     nNonOrthogonalCorrectors 0;
     pRefCell        0.0;
@@ -137,27 +140,44 @@ MELTING
     minTempCorrector 1;
     maxTempCorrector 150;
     epsilonTolerance 1e-6;
-    epsilonRelaxation 0.95;
-    
-//	//	Heatsource characteristics
-HS_a 0.002;
-HS_bg 0.0;//20
-HS_velocity 0.0;//6.0;
-HS_lg 0.0;
-HS_Q 780.0;//
+    epsilonRelaxation 0.5;    // halved: the 0<->1 limit cycle that killed
+                              // the run at ~0.51 s (same converged result)
 
-HS_deposition_cutoff 0.5;
+    // Arc process parameters (GMAW on SS308L):
+    //   current 151 A, arc voltage 19.7 V, arc efficiency 0.8
+    //   -> HS_Q = 151 * 19.7 * 0.8 = 2379.76 W delivered to the workpiece
+    //   travel speed 500 mm/min = 8.3333e-3 m/s
+    //   wire feed 6 m/min (not modelled: beamWeldFoam has no filler-wire
+    //   mass source, so deposited filler metal is not added)
+    //
+    //	//	Heatsource characteristics
+    HS_a 0.002;             // arc spot radius [m]
+    HS_bg 0.0;              // spot offset in x [m]
+    HS_velocity 8.3333e-3;  // 500 mm/min travel speed [m/s]
+    HS_lg -0.004;           // start at z = -4 mm, travel towards +z [m]
+    HS_Q 2379.76;           //151 A * 19.7 V * 0.8 efficiency [W]
 
-Oscillation_Amplitude   0.0;//0.015;
-Oscillation_Frequency   0.0;
+    HS_deposition_cutoff 0.99;  // conduction mode (author's note): rays
+                                // ignore smeared/flotsam cells and deposit
+                                // on the dense pool surface
 
-Y_R 0.2;//0.05; //Y_R->0 HS -> wider
-focY	0.0165; //-0.08;//
-foc_shift_vel 0.0;
-Q_ramp_rate 7800.0;
-tshift 0.25;
+    Oscillation_Amplitude   0.0;//0.015;
+    Oscillation_Frequency   0.0;
 
-damperSwitch false;//true;
+    Y_R 0.2;//0.05; //Y_R->0 HS -> wider
+    focY	0.0165;  //-0.08;//
+    foc_shift_vel 0.0;
+    Q_ramp_rate 0.0;    // no ramp-down: full arc power for the whole pass
+    tshift 0.0;
+
+    damperSwitch true;    // partition interface forces/sinks by density:
+                            // with the 7900:1 metal/gas ratio the explicit
+                            // evaporative sink would otherwise drive the
+                            // low-heat-capacity gas cells to negative T
+
+    recoilScale 0.2;        // apply 20% of the equilibrium vapour recoil:
+                            // the full 0.54*p0 digs an unphysical trench
+                            // under a 2.4 kW arc (Qv cooling untouched)
 }
 
 relaxationFactors

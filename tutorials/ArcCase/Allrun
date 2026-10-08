@@ -1,8 +1,15 @@
 #!/bin/sh
 cd ${0%/*} || exit 1    # Run from this directory
 
+# Strip conda OpenMPI libraries from the search path: they make the system
+# mpirun segfault at startup (see the note under "Running a case" in README).
+LD_LIBRARY_PATH=$(echo "$LD_LIBRARY_PATH" | tr ':' '\n' \
+    | grep -viE "miniforge|anaconda|conda" | paste -sd:)
+export LD_LIBRARY_PATH
+
+rm -rf 0 processor*     # fresh initial state; later times are kept (resume)
 cp -r initial 0
 blockMesh
 setFields
 decomposePar
-mpirun.openmpi -np 6 beamWeldFoam -parallel >log &
+mpirun.openmpi --oversubscribe -np 20 beamWeldFoam -parallel >log &

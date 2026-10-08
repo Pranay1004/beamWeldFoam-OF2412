@@ -42,7 +42,10 @@
             point phit(xlist[x_ray], miny, zlist[z_ray]);
             label cellpointhit = mesh.findCell(phit);
 
-            if(yDim[cellpointhit]>1e-12)
+            // Guard: a ray can miss dense metal entirely (e.g. a column
+            // the ejecta has vacated); findCell then returns -1 and the
+            // indexing below would fault. Such rays deposit no power.
+            if(cellpointhit >= 0 && yDim[cellpointhit]>1e-12)
                 {
                     if(time.value()>tshift)
                 {

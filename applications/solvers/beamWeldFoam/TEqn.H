@@ -30,14 +30,28 @@
             const volTensorField gradU(fvc::grad(U));
             const volTensorField tau(((mixture.mu()*gradU) + (mixture.mu()*gradU.T()))-((2.0/3.0)*mixture.mu()*(fvc::div(phi))*I));
 
+            // Tpos: strictly positive temperature for the kinetic-theory
+            // evaporation rate below. A single overshoot cell (T <= 0) from
+            // the explicit source terms would otherwise kill the run in
+            // pow(negative, 0.5) under FOAM_SIGFPE trapping. For all
+            // physical cells (T > 0) Tpos == Temperature, i.e. no change.
+            const volScalarField Tpos
+            (
+                max
+                (
+                    Temperature,
+                    dimensionedScalar("Tpos", Temperature.dimensions(), SMALL)
+                )
+            );
+
             Qv = min
             (
                 max((Temperature - (Tvap - (TSmooth/2.0)))/TSmooth, 0.0),
                 1.0
             )*0.82*LatentHeatVap*Mm*p0*Foam::exp
             (
-                LatentHeatVap*Mm*((Temperature-Tvap)/(R*Temperature*Tvap))
-            )/Foam::pow(2*M_PI*Mm*R*Temperature,0.5);
+                LatentHeatVap*Mm*((Tpos-Tvap)/(R*Tpos*Tvap))
+            )/Foam::pow(2*M_PI*Mm*R*Tpos,0.5);
 
             if (damperSwitch)
             {
